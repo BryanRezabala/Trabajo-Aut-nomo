@@ -1,8 +1,8 @@
 package models
 
 type Pasajero struct {
-    ID        int64  `json:"id"`
-    Nombre    string `json:"nombre" validate:"required"`
-    Apellido  string `json:"apellido" validate:"required"`
-    Email     string `json:"email" validate:"required,email"`
+    ID       int    `db:"id" json:"id"`
+    Nombre   string `db:"nombre" json:"nombre"`
+    Apellido string `db:"apellido" json:"apellido"`
+    Email    string `db:"email" json:"email"`
 }

@@ -1,40 +1,51 @@
 package main
 
 import (
-    "Vuelos-echo/config"
-    "Vuelos-echo/controllers"
+    "Vuelos/db"
+    "Vuelos/handlers"
+    "Vuelos/repository"
+    "Vuelos/routes"
+    "Vuelos/graphql"
+
+    "net/http"
+    "github.com/gorilla/websocket"
     "github.com/labstack/echo/v4"
     "github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
-    db := config.Connect()
+    db.Init() // Inicializar la conexión a la base de datos
     e := echo.New()
-
     e.Use(middleware.Logger())
     e.Use(middleware.Recover())
 
-    pasajeroController := &controllers.PasajeroController{DB: db}
-    reservaController := &controllers.ReservaController{DB: db}
-    vueloController := &controllers.VueloController{DB: db}
+    pasajeroRepo := repository.NewPasajeroRepository(db.Conectar())
+    pasajeroHandler := &handlers.PasajeroHandler{Repo: pasajeroRepo}
+    vueloRepo := repository.NewVueloRepository(db.Conectar())
+    vueloHandler := &handlers.VueloHandler{Repo: vueloRepo}
+    reservaRepo := repository.NewReservaRepository(db.Conectar())
+    reservaHandler := &handlers.ReservaHandler{Repo: reservaRepo}
 
-    e.GET("/pasajeros", pasajeroController.GetAll)
-    e.POST("/pasajeros", pasajeroController.Create)
-    e.GET("/pasajeros/:id", pasajeroController.GetById)
-    e.PUT("/pasajeros/:id", pasajeroController.Update)
-    e.DELETE("/pasajeros/:id", pasajeroController.Delete)
+    resolver := &graphql.Resolver{
+        PasajeroRepo: pasajeroRepo,
+        VueloRepo:    vueloRepo,
+        ReservaRepo:  reservaRepo,
+    }
 
-    e.GET("/reservas", reservaController.GetAll)
-    e.POST("/reservas", reservaController.Create)
-    e.GET("/reservas/:id", reservaController.GetById)
-    e.PUT("/reservas/:id", reservaController.Update)
-    e.DELETE("/reservas/:id", reservaController.Delete)
+    schema := resolver.InitSchema()
+    graphQLHandler := &handlers.GraphQLHandler{Schema: schema}
 
-    e.GET("/vuelos", vueloController.GetAll)
-    e.POST("/vuelos", vueloController.Create)
-    e.GET("/vuelos/:id", vueloController.GetById)
-    e.PUT("/vuelos/:id", vueloController.Update)
-    e.DELETE("/vuelos/:id", vueloController.Delete)
+    webSocketHandler := &handlers.WebSocketHandler{
+        Upgrader: websocket.Upgrader{
+            ReadBufferSize:  1024,
+            WriteBufferSize: 1024,
+            CheckOrigin: func(r *http.Request) bool {
+                return true
+            },
+        },
+    }
+
+    routes.InitRoutes(e, pasajeroHandler, vueloHandler, reservaHandler, graphQLHandler, webSocketHandler)
 
     e.Logger.Fatal(e.Start(":8080"))
 }

@@ -1,8 +1,8 @@
 package models
 
 type Reserva struct {
-    ID         int64  `json:"id"`
-    PasajeroID int64  `json:"pasajero_id" validate:"required"`
-    VueloID    int64  `json:"vuelo_id" validate:"required"`
-    Fecha      string `json:"fecha" validate:"required"`
+    ID         int    `db:"id" json:"id"`
+    PasajeroID int    `db:"pasajero_id" json:"pasajero_id"`
+    VueloID    int    `db:"vuelo_id" json:"vuelo_id"`
+    Fecha      string `db:"fecha" json:"fecha"`
 }
